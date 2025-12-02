@@ -6,13 +6,12 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
-COPY index.js ./
-COPY clip.js ./
+COPY . ./
 
 EXPOSE 3000
 
 RUN node -e "const { pipeline } = require('@huggingface/transformers'); (async () => { await pipeline('image-feature-extraction','Xenova/clip-vit-base-patch32',{quantized:true}); console.log('Model cached'); })().catch(()=>{});"
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
