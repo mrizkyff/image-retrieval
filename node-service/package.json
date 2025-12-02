@@ -4,6 +4,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
+    "prestart": "sequelize-cli db:migrate",
     "start": "node index.js",
     "migrate": "sequelize-cli db:migrate"
   },
