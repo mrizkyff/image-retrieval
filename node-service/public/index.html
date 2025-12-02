@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Admin</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:20px;line-height:1.4}
+    h1{margin:0 0 12px}
+    form{margin:12px 0;padding:12px;border:1px solid #ddd;border-radius:8px}
+    label{display:block;margin:6px 0}
+    input,textarea,button{font-size:14px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    img{max-width:100px;border:1px solid #eee;border-radius:4px}
+    .row-actions{display:flex;gap:8px}
+    .flex{display:flex;gap:8px;align-items:center}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    .section{margin-top:20px}
+  </style>
+</head>
+<body>
+  <h1>Product Admin</h1>
+
+  <div class="section">
+    <h2>Buat Product</h2>
+    <form id="createForm">
+      <label>Nama <input type="text" name="name" required></label>
+      <label>Harga <input type="number" step="0.01" name="price" required></label>
+      <label>Deskripsi <textarea name="description" rows="3"></textarea></label>
+      <label>Gambar <input type="file" name="image" accept="image/*" required></label>
+      <button type="submit">Simpan</button>
+      <span id="createStatus"></span>
+    </form>
+  </div>
+
+  <div class="section">
+    <h2>Daftar Products</h2>
+    <div id="products"></div>
+  </div>
+
+  <div class="section">
+    <h2>Pencarian Gambar</h2>
+    <form id="searchForm">
+      <label>Gambar Query <input type="file" name="image" accept="image/*" required></label>
+      <button type="submit">Cari</button>
+      <span id="searchStatus"></span>
+    </form>
+    <div id="searchResults"></div>
+  </div>
+
+  <script>
+    const api = location.origin
+
+    async function fetchProducts(){
+      const r = await fetch(api + '/products')
+      const data = await r.json()
+      renderProducts(data)
+    }
+
+    function basename(p){
+      if(!p) return null
+      const s = p.split('\\').pop().split('/').pop()
+      return s
+    }
+
+    function renderProducts(items){
+      const c = document.getElementById('products')
+      if(!items.length){ c.innerHTML = 'Belum ada data'; return }
+      const rows = items.map(i => {
+        const file = basename(i.image_path)
+        const img = file ? `<img src="${api}/uploads/${file}" alt="${i.name}">` : ''
+        return `
+        <tr data-id="${i.id}">
+          <td>${i.id}</td>
+          <td>${img}</td>
+          <td><input type="text" value="${i.name}" class="u-name"></td>
+          <td><input type="number" step="0.01" value="${i.price}" class="u-price"></td>
+          <td><textarea rows="2" class="u-desc">${i.description||''}</textarea></td>
+          <td><input type="file" class="u-image" accept="image/*"></td>
+          <td class="row-actions">
+            <button class="btn-update">Update</button>
+            <button class="btn-delete">Delete</button>
+          </td>
+        </tr>`
+      }).join('')
+      c.innerHTML = `
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Gambar</th><th>Nama</th><th>Harga</th><th>Deskripsi</th><th>Ganti Gambar</th><th>Aksi</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`
+      bindRowActions()
+    }
+
+    function bindRowActions(){
+      document.querySelectorAll('.btn-delete').forEach(b => {
+        b.onclick = async e => {
+          const tr = e.target.closest('tr')
+          const id = tr.dataset.id
+          if(!confirm('Hapus product ' + id + '?')) return
+          const r = await fetch(api + '/products/' + id, { method: 'DELETE' })
+          if(r.ok) fetchProducts()
+        }
+      })
+      document.querySelectorAll('.btn-update').forEach(b => {
+        b.onclick = async e => {
+          const tr = e.target.closest('tr')
+          const id = tr.dataset.id
+          const fd = new FormData()
+          fd.append('name', tr.querySelector('.u-name').value)
+          fd.append('price', tr.querySelector('.u-price').value)
+          fd.append('description', tr.querySelector('.u-desc').value)
+          const imgInput = tr.querySelector('.u-image')
+          if(imgInput.files[0]) fd.append('image', imgInput.files[0])
+          const r = await fetch(api + '/products/' + id, { method: 'PUT', body: fd })
+          if(r.ok) fetchProducts()
+        }
+      })
+    }
+
+    document.getElementById('createForm').onsubmit = async e => {
+      e.preventDefault()
+      const el = document.getElementById('createStatus')
+      el.textContent = 'Mengirim...'
+      const fd = new FormData(e.target)
+      const r = await fetch(api + '/products', { method: 'POST', body: fd })
+      if(r.ok){
+        e.target.reset()
+        el.textContent = 'Berhasil'
+        fetchProducts()
+      } else {
+        el.textContent = 'Gagal'
+      }
+    }
+
+    document.getElementById('searchForm').onsubmit = async e => {
+      e.preventDefault()
+      const el = document.getElementById('searchStatus')
+      el.textContent = 'Mencari...'
+      const fd = new FormData(e.target)
+      const r = await fetch(api + '/search/image', { method: 'POST', body: fd })
+      const data = await r.json()
+      const list = data.map(d => `<li>${d.id} - ${d.name} (score: ${d.score.toFixed(4)})</li>`).join('')
+      document.getElementById('searchResults').innerHTML = `<ul>${list}</ul>`
+      el.textContent = ''
+    }
+
+    fetchProducts()
+  </script>
+</body>
+</html>

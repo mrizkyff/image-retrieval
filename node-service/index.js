@@ -9,6 +9,8 @@ const getImageEmbedding = require('./clip');
 const app = express();
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+app.use('/uploads', express.static(uploadDir));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
