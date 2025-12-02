@@ -3,3 +3,6 @@ uvicorn[standard]
 transformers
 torch
 pillow
+sqlalchemy
+psycopg2-binary
+python-dotenv
