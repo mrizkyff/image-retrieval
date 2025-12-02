@@ -64,6 +64,7 @@ app.post('/products', upload.single('image'), async (req, res) => {
     const product = await Product.create({ name, description, price, image_path: req.file.path, embedding });
     res.status(201).json(product);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'failed to create product' });
   }
 });
