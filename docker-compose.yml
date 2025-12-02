@@ -1,0 +1,27 @@
+services:
+  py-service:
+    build: ./py-service
+    image: image-retrieval-py:latest
+    container_name: image-retrieval-py
+    ports:
+      - "8001:8000"
+    environment:
+      - HF_HOME=/hf-cache
+    volumes:
+      - hf-cache:/hf-cache
+    restart: unless-stopped
+
+  node-service:
+    build: ./node-service
+    image: image-retrieval-node:latest
+    container_name: image-retrieval-node
+    ports:
+      - "3001:3000"
+    environment:
+      - HF_HOME=/hf-cache
+    volumes:
+      - hf-cache:/hf-cache
+    restart: unless-stopped
+
+volumes:
+  hf-cache:
